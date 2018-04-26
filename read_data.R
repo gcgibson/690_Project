@@ -16,6 +16,28 @@ if (!DOWNLOADED){
 } else{
   nhanes0 <- read.csv("nhanes0.csv")
 }
-  
+
+
+# convert dpq series to NAs, combine to form phq
+# also calculate mean of 4 spb measureements
+nhanes1 <- nhanes0 %>% 
+  # repeated seqn, so discard repeats
+  distinct(seqn, .keep_all = TRUE) %>%
+  mutate(dpq010 = convert_to_na(dpq010),
+         dpq020 = convert_to_na(dpq020),
+         dpq030 = convert_to_na(dpq030),
+         dpq040 = convert_to_na(dpq040),
+         dpq050 = convert_to_na(dpq050),
+         dpq060 = convert_to_na(dpq060),
+         dpq070 = convert_to_na(dpq070),
+         dpq080 = convert_to_na(dpq080),
+         dpq090 = convert_to_na(dpq090)) %>%
+  rowwise() %>%
+  mutate(dpqna = sum(is.na(c(dpq010,dpq020,dpq030,dpq040,dpq050,
+                             dpq060,dpq070,dpq080,dpq090))),
+         phq = sum(c(dpq010,dpq020,dpq030,dpq040,dpq050,
+                     dpq060,dpq070,dpq080,dpq090)),
+         sbp = mean(c(bpxsy1,bpxsy2,bpxsy3,bpxsy4), na.rm = TRUE),
+         dbp = mean(c(bpxdi1,bpxdi2,bpxdi3,bpxdi4), na.rm = TRUE))
   
   
