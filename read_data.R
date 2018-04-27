@@ -25,13 +25,13 @@ nhanes1 <- nhanes0 %>%
          gh = lbxgh, hdl = lbdhdd, totchol = lbxtc, diabetes = diq010,
          drinks = alq130, chd = mcq160c, heartattack = mcq160e, stroke = mcq160f,
          cancer = mcq220, dpq010:dpq090, modworkact = paq620, modrecract = paq665,
-         limited = pfq059, sleephrs1 = sld010H, sleephrs2 = slq010H,
+         limited = pfq059, sleephrs = sld010h,
          sleepdisorder = slq060, smoke100 = smq020, smoker = smq040,
          triglyceride = lbxtr, ldl = lbdldl)
 
 # convert dpq series to NAs, combine to form phq
 # also calculate mean of 4 spb measureements
-nhanes1 <- nhanes0 %>% 
+nhanes2 <- nhanes1 %>% 
   # repeated seqn, so discard repeats
   distinct(seqn, .keep_all = TRUE) %>%
   mutate(dpq010 = convert_to_na(dpq010),
