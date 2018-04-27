@@ -42,7 +42,7 @@ get_data <- function(survey, letter){
   slq <- sasxport.get(paste(url,survey,"/SLQ",letter,".XPT",sep=""))
   smq <- sasxport.get(paste(url,survey,"/SMQ",letter,".XPT",sep=""))
   trigly <-  sasxport.get(paste(url,survey,"/TRIGLY",letter,".XPT",sep=""))
-  datalist <- list(demo, bmx, bpx, ghb, tchol, alq, bpq, mcq, dpq, 
-                   inq, paq, pfq, slq, smq, trigly) # rxq_rx, 
+  datalist <- list(demo, bmx, bpx, ghb, hdl, tchol, bpq, diq, alq,
+                   mcq, dpq, inq, paq, pfq, slq, smq, trigly) # rxq_rx, 
   Reduce(join_by_id, datalist) %>% mutate(survey = survey)
 }
