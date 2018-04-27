@@ -6,7 +6,7 @@ if (!DOWNLOADED){
   url <- "https://wwwn.cdc.gov/Nchs/Nhanes/"
   
   surveys <- c("2007-2008","2009-2010","2011-2012","2013-2014")
-  letters <- paste("_",LETTERS[5:8], sep = "")
+  letters <- paste0("_",LETTERS[5:8])
   
   # stack the surveys together
   nhanes0 <- map2_df(surveys, letters, get_data)
@@ -17,6 +17,17 @@ if (!DOWNLOADED){
   nhanes0 <- read.csv("nhanes0.csv")
 }
 
+nhanes1 <- nhanes0 %>%
+  select(seqn, gender = riagendr, age = ridageyr, race = ridreth1, 
+         education = dmdeduc2, dmdmartl, pir = indfmpir,
+         bmi = bmxbmi, height = bmxht, weight = bmxwt, waistcirc = bmxwaist,
+         starts_with("bpxsy"), starts_with("bpxdi"), pulsetype = bpxpuls,
+         gh = lbxgh, hdl = lbdhdd, totchol = lbxtc, diabetes = diq010,
+         drinks = alq130, chd = mcq160c, heartattack = mcq160e, stroke = mcq160f,
+         cancer = mcq220, dpq010:dpq090, modworkact = paq620, modrecract = paq665,
+         limited = pfq059, sleephrs1 = sld010H, sleephrs2 = slq010H,
+         sleepdisorder = slq060, smoke100 = smq020, smoker = smq040,
+         triglyceride = lbxtr, ldl = lbdldl)
 
 # convert dpq series to NAs, combine to form phq
 # also calculate mean of 4 spb measureements
