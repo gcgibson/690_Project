@@ -7,6 +7,7 @@ library(broom)
 library(haven)
 library(stringr)
 library(caret)
+library(glmnet)
 
 # helper functions
 
@@ -45,4 +46,45 @@ get_data <- function(survey, letter){
   datalist <- list(demo, bmx, bpx, ghb, hdl, tchol, bpq, diq, alq,
                    mcq, dpq, inq, paq, pfq, slq, smq, trigly) # rxq_rx, 
   Reduce(join_by_id, datalist) %>% mutate(survey = survey)
+}
+
+
+get_kfold_acc <- function(resp, train, nn, K = 5, seed = 123){
+  
+  # sort data frame
+  row_inds <- 1:nrow(train)
+  set.seed(seed)
+  train_sort <- train[sample(row_inds),]
+  
+  # split into k blocks
+  train_split <- split(train_sort, 1:K)
+  
+  # initialize vector to hold k acc measurements
+  acc <- numeric(K)
+  
+  # for each, create a training set with cases not in the block
+  # also create a test set with cases in the block
+  for(k in 1:K){
+    
+    # get row indices for test set
+    test_inds <- as.numeric(row.names(train_split[[k]]))
+    
+    # get logical indices for training set
+    train_lgl <- !(row_inds %in% test_inds)
+    
+    # extract training set, fit model
+    train_k <- train_sort[train_lgl,]
+    
+    train.cl <- factor(as.numeric(unlist(train_k[resp])))
+    
+    # extract validation set, make predictions using learned model
+    test_k <- train_split[[k]]
+    preds <- knn(train_k[expvars], test_k[expvars], train.cl, k = nn)
+    
+    # calculate mse for this block
+    acc[k] <- sum(factor(as.numeric(unlist(test_k[resp]))) == preds)/nrow(test_k)
+  }
+  
+  # return mean mse of the k blocks
+  mean(acc)
 }
