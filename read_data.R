@@ -33,6 +33,8 @@ nhanes1 <- nhanes0 %>%
 
 dim(nhanes1)
 
+write.csv(nhanes1, "nhanes1.csv", row.names = FALSE)
+
 # convert dpq series to NAs, combine to form phq
 # also calculate mean of 4 spb, dbp measureements
 nhanes2 <- nhanes1 %>% 
@@ -49,6 +51,7 @@ nhanes2 <- nhanes1 %>%
          dpq090 = convert_to_na(dpq090),
          education = convert_to_na(education),
          diabetes = convert_to_na(diabetes),
+         marital = convert_to_na(marital, c(77,99)),
          drinks = convert_to_na(drinks,c(777,999)),
          chd = convert_to_na(chd),
          heartattack = convert_to_na(heartattack),
@@ -81,3 +84,5 @@ nhanes2$agecat <- cut(nhanes2$age, c(20, 45, 65, 90),
 # http://jamanetwork.com/journals/jamapediatrics/fullarticle/191114
 nhanes2$pircat <- cut(nhanes2$pir, c(0, 1.3, 3, 6),
                       labels = 1:3, right = FALSE)  
+
+write.csv(nhanes2, "nhanes2.csv", row.names = FALSE)
