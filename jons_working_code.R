@@ -12,6 +12,7 @@ library(e1071)
 library(tree)
 library(glmnet)
 library(class)
+library(pROC)
 source("helpers.R")
 
 nhanes3 <- read.csv("nhanes2.csv") %>%
@@ -42,38 +43,36 @@ chd.obs <- test$chd
 
 expvars <- names(nhanes3)[1:14]
 
+# create sets for individual outputs
+ha.train <- train[c("heartattack",expvars)]
+str.train <- train[c("stroke",expvars)]
+chd.train <- train[c("chd",expvars)]
+
+ha.test <- test[c("heartattack",expvars)]
+str.test <- test[c("stroke",expvars)]
+chd.test <- test[c("chd",expvars)]
+
 # run logreg lasso
-
 grid <- c(0,10^seq(10,-2,length=100))
-
-# x_tr <- model.matrix(heartattack~0+.,train[c("heartattack",expvars)])
-# y_tr <- train$heartattack
-# lr.lasso <- cv.glmnet(x_tr,y_tr,lambda=grid,nfolds=5,family="binomial",type.measure="mse")
-# minlam <- lr.lasso$lambda.min
-# x_te <- model.matrix(heartattack~0+.,test[c("heartattack",expvars)])
-# y_te <- test$heartattack
-
-# lr.pred <- 1*(predict(lr.lasso, newx = x_te, s = minlam, type = "response") > 0.50)
-# table(pred=lr.pred,obs=y_te)
-# mean(lr.pred == y_te)
 
 get_lr_acc <- function(resp, train, test, alpha, grid = grid, expvars = expvars){
   y_tr <- as.numeric(unlist(train[resp]))
-  x_tr <- model.matrix(as.formula(paste0(resp,"~0+.")),train[c(resp,expvars)])
+  x_tr <- model.matrix(as.formula(paste0(resp,"~0+.")),train)
   cv.fit <- cv.glmnet(x_tr, y_tr , alpha = alpha, lambda = grid, nfolds = 5,
                       family = "binomial", type.measure = "mse")
   lambda <- cv.fit$lambda.min
-  x_te <- model.matrix(as.formula(paste0(resp,"~0+.")), test[c(resp, expvars)])
+  x_te <- model.matrix(as.formula(paste0(resp,"~0+.")), test)
   y_te <- as.numeric(unlist(test[resp]))
   preds <- 1*(predict(cv.fit, newx = x_te, s = lambda, type = "response") > 0.50)
   acc <- mean(preds == y_te)
   list(acc = acc, preds = preds,lambda = lambda)
 }
 
-ha.lr <- get_lr_acc("heartattack", train, test, 1, grid)
-str.lr <- get_lr_acc("str", train, test, 1, grid)
-chd.lr <- get_lr_acc("chd", train, test, 1, grid)
+ha.lr <- get_lr_acc("heartattack", ha.train, ha.test, 1, grid)
+str.lr <- get_lr_acc("stroke", str.train, str.test, 1, grid)
+chd.lr <- get_lr_acc("chd", chd.train, chd.test, 1, grid)
 
+# run knn
 grid <- 1:20
 
 get_knn_acc <- function(resp, train, test, grid, K = 5, expvars = expvars){
@@ -90,35 +89,38 @@ get_knn_acc <- function(resp, train, test, grid, K = 5, expvars = expvars){
 }
 
 ha.knn <- get_knn_acc("heartattack", train, test, grid)
-str.knn <- get_knn_acc("str", train, test, grid)
+str.knn <- get_knn_acc("stroke", train, test, grid)
 chd.knn <- get_knn_acc("chd", train, test, grid)
+
+
+# run svm
+grid <- list(cost = c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1),
+             epsilon = c(0.01, 0.1, 1))
+
+get_svm_acc <- function(resp, tr, te, kernel, grid, seed = 123){
+  tr[resp] <- factor(ifelse(tr[resp] == 0, -1, 1))
+  set.seed(seed)
+  tc <- tune.control(cross = 5)
+  cv.fit <- tune(svm, as.formula(paste0(resp,"~.")), data = tr,
+                 kernel = kernel, tunecontrol = tc,
+                 ranges = grid)
+  bestmod <- cv.fit$best.model
+  te[resp] <- factor(ifelse(te[resp] == 0, -1, 1))
+  preds <- predict(bestmod,te)
+  acc <- mean(preds == unlist(te[resp]))
+  cost <- bestmod$cost
+  epsilon <- bestmod$epsilon
+  list(acc = acc, preds = preds, cost = cost, epsilon = epsilon)
+}
+
+ha.lin.svm <- get_svm_acc("heartattack",ha.train,ha.test,"linear",grid)
+str.lin.svm <- get_svm_acc("stroke",str.train,str.test,"linear",grid)
+chd.lin.svm <- get_svm_acc("chd",chd.train,chd.test,"linear",grid)
 
 grid <- list(cost = c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1),
              epsilon = c(0.01, 0.1, 1))
 
-get_svm_acc <- function(resp, train, test, kernel, grid, expvars = expvars, seed = 123){
-  train[resp] <- factor(ifelse(train[resp] == 0, -1, 1))
-  set.seed(seed)
-  tc <- tune.control(cross = 5)
-  cv.fit <- tune(svm, as.formula(paste0(resp,"~.")), data = train,
-                 kernel = kernel, tunecontrol = tc,
-                 ranges = grid)
-  bestmod <- cv.fit$best.model
-  test[resp] <- factor(ifelse(test[resp] == 0, -1, 1))
-  preds <- predict(bestmod,test[c(resp,expvars)])
-  acc <- mean(preds == unlist(test[resp]))
-  cost <- bestmod$cost
-  epislon <- bestmod$epsilon
-  list(acc = acc, preds = preds, cost = cost, epsilon = epsilon)
-}
-
-ha.svm <- get_svm_acc("heartattack",train,test,"linear",grid)
-str.svm <- get_svm_acc("stroke",train,test,"linear",grid)
-chd.svm <- get_svm_acc("chd",train,test,"linear",grid)
-
-
-# DTs
-
+# run DTs
 resp <- "heartattack"
 tr <- train
 te <- test
