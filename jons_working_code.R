@@ -36,6 +36,10 @@ test <- nhanes3[test.inds,]
 
 train <- nhanes3[-test.inds,]
 
+ha.obs <- test$heartattack
+str.obs <- test$stroke
+chd.obs <- test$chd
+
 expvars <- names(nhanes3)[1:14]
 
 # run logreg lasso
@@ -61,14 +65,18 @@ get_lr_acc <- function(resp, train, test, alpha, grid = grid, expvars = expvars)
   lambda <- cv.fit$lambda.min
   x_te <- model.matrix(as.formula(paste0(resp,"~0+.")), test[c(resp, expvars)])
   y_te <- as.numeric(unlist(test[resp]))
-  preds <- 1*(predict(cv.fit, newx = x_te, s = lambda.min, type = "response") > 0.50)
+  preds <- 1*(predict(cv.fit, newx = x_te, s = lambda, type = "response") > 0.50)
   acc <- mean(preds == y_te)
   list(acc = acc, preds = preds,lambda = lambda)
 }
 
+ha.lr <- get_lr_acc("heartattack", train, test, 1, grid)
+str.lr <- get_lr_acc("str", train, test, 1, grid)
+chd.lr <- get_lr_acc("chd", train, test, 1, grid)
+
 grid <- 1:20
 
-get_knn_acc <- function(resp, train, test, grid, K = 5){
+get_knn_acc <- function(resp, train, test, grid, K = 5, expvars = expvars){
   accs <- numeric(length = length(grid))
   for(i in 1:length(grid)){
     accs[i] <- get_kfold_acc(resp,train,grid[i],K)
@@ -81,11 +89,14 @@ get_knn_acc <- function(resp, train, test, grid, K = 5){
   list(acc = acc, preds = preds, nn = nn)
 }
 
+ha.knn <- get_knn_acc("heartattack", train, test, grid)
+str.knn <- get_knn_acc("str", train, test, grid)
+chd.knn <- get_knn_acc("chd", train, test, grid)
 
 grid <- list(cost = c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1),
              epsilon = c(0.01, 0.1, 1))
 
-get_svm_acc <- function(resp, train, test, kernel, grid, seed = 123){
+get_svm_acc <- function(resp, train, test, kernel, grid, expvars = expvars, seed = 123){
   train[resp] <- factor(ifelse(train[resp] == 0, -1, 1))
   set.seed(seed)
   tc <- tune.control(cross = 5)
@@ -94,23 +105,59 @@ get_svm_acc <- function(resp, train, test, kernel, grid, seed = 123){
                  ranges = grid)
   bestmod <- cv.fit$best.model
   test[resp] <- factor(ifelse(test[resp] == 0, -1, 1))
-  preds <- predict(bestmod,test)
+  preds <- predict(bestmod,test[c(resp,expvars)])
   acc <- mean(preds == unlist(test[resp]))
   cost <- bestmod$cost
   epislon <- bestmod$epsilon
   list(acc = acc, preds = preds, cost = cost, epsilon = epsilon)
 }
 
+ha.svm <- get_svm_acc("heartattack",train,test,"linear",grid)
+str.svm <- get_svm_acc("stroke",train,test,"linear",grid)
+chd.svm <- get_svm_acc("chd",train,test,"linear",grid)
 
-get_dt_acc <- function(resp, ){
-  train[resp] <- lapply(train[resp],factor)
-  tree.nhanes <- tree(as.formula(paste0(resp,"~.")),train)
-  cv.fit <- cv.tree(tree.nhanes, FUN = prune.misclass, K = 5)
-  devmin <- which.min(cv.fit$dev)
-  bestsize <- cv.fit$size[devmin]
-  prune.nhanes <- prune.misclass(tree.nhanes, best = bestsize)
-  preds <- predict(prune.nhanes, test, type = "class")
-  test[resp] <- lapply(test[resp],factor)
-  acc <- mean(preds == unlist(test[resp]))
-  list(acc = acc, preds = preds, bestsize = bestsize)
-}
+
+# DTs
+
+resp <- "heartattack"
+tr <- train
+te <- test
+tr[resp] <- factor(as.numeric(unlist(tr[resp])))
+te[resp] <- factor(as.numeric(unlist(te[resp])))
+tree.nhanes <- tree(as.formula(paste0(resp,"~.")), tr[c(resp,expvars)])
+cv.fit <- cv.tree(tree.nhanes, FUN = prune.misclass)
+devmin <- which.min(cv.fit$dev)
+bestsize <- cv.fit$size[devmin]
+prune.nhanes <- prune.misclass(tree.nhanes, best = bestsize)
+preds <- predict(prune.nhanes, te[expvars], type = "class")
+acc <- mean(preds == unlist(te[resp]))
+ha.dt <- list(acc = acc, preds = preds, bestsize = bestsize)
+
+resp <- "stroke"
+tr <- train
+te <- test
+tr[resp] <- factor(as.numeric(unlist(tr[resp])))
+te[resp] <- factor(as.numeric(unlist(te[resp])))
+tree.nhanes <- tree(as.formula(paste0(resp,"~.")), tr[c(resp,expvars)])
+cv.fit <- cv.tree(tree.nhanes, FUN = prune.misclass)
+devmin <- which.min(cv.fit$dev)
+bestsize <- cv.fit$size[devmin]
+prune.nhanes <- prune.misclass(tree.nhanes, best = bestsize)
+preds <- predict(prune.nhanes, te[expvars], type = "class")
+acc <- mean(preds == unlist(te[resp]))
+str.dt <- list(acc = acc, preds = preds, bestsize = bestsize)
+
+resp <- "chd"
+tr <- train
+te <- test
+tr[resp] <- factor(as.numeric(unlist(tr[resp])))
+te[resp] <- factor(as.numeric(unlist(te[resp])))
+tree.nhanes <- tree(as.formula(paste0(resp,"~.")), tr[c(resp,expvars)])
+cv.fit <- cv.tree(tree.nhanes, FUN = prune.misclass)
+devmin <- which.min(cv.fit$dev)
+bestsize <- cv.fit$size[devmin]
+prune.nhanes <- prune.misclass(tree.nhanes, best = bestsize)
+preds <- predict(prune.nhanes, te[expvars], type = "class")
+acc <- mean(preds == unlist(te[resp]))
+chd.dt <- list(acc = acc, preds = preds, bestsize = bestsize)
+
