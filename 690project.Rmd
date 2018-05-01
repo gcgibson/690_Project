@@ -1,0 +1,233 @@
+---
+title: "690 Project"
+author: "Bianca Doone"
+date: "April 26, 2018"
+output: pdf_document
+---
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+library(leaps)
+library(glmnet)
+
+nhanes0 = read.csv("C:/Users/bdoone/Downloads/nhanes2.csv")
+nhanes2 = nhanes0[,c(2,4,5,6,8,11,12,13,15,16,17,18,19,20,21,22,26,28,29,31,32,33,34)]
+chd_df = nhanes2[,c(1:12, 15:23)]
+ha_df = nhanes2[,c(1:11, 13, 15:23)]
+stroke_df = nhanes2[,c(1:11, 14:23)]
+
+chd_df$chd = chd_df$chd-1
+ha_df$heartattack = ha_df$heartattack-1
+stroke_df$stroke = stroke_df$stroke-1
+
+chd_glm_full = glm(chd~., data = chd_df, family = "binomial")
+chd_glm_null = glm(chd~1, data = chd_df, family = "binomial")
+```
+gender, age,ethnicity,bmi, bp sys, bp di, indfmmpi, slq060
+
+
+#Coronary Heart Disease
+Best Subset
+```{r}
+bestchd = regsubsets(chd~.,data = chd_df, nvmax = 23, really.big = T)
+best.sum = summary(bestchd)
+best.sum$rss
+
+```
+
+age, race, height, pulsetype, hdl, heartattack, stroke, modrecract, ldl
+
+Forward Subset
+```{r}
+forwardchd = regsubsets(chd~., data =chd_df, nvmax = 23, method = "forward")
+forward.sum = summary(forwardchd)
+forward.sum$rss
+
+f2chd = step(chd_glm_null, direction = "forward")
+b2chd = step(chd_glm_full, direction = "backward")
+
+summary(f2chd)
+```
+
+age, race, height, totchol, heartattack, stroke, modrecract, triglyceride, agecat
+
+Backward Subset
+```{r}
+backwardchd = regsubsets(chd~., data = chd_df, nvmax = 23, method = "backward")
+backward.sum = summary(backwardchd)
+backward.sum$rss
+```
+
+age, bmi, weight, totchol, heartattack, stroke, modrecract, triglyceride, bmicat
+
+plots
+```{r}
+plot(best.sum$rss, xlab = "Number of Variables",
+     ylab = "RSS", type = "l",
+     main = "Coronary Heart Disease")
+lines(forward.sum$rss, col = "blue")
+lines(backward.sum$rss, col = "red")
+legend(13,118,legend = c("Best", "Forward", "Backward"), col = c("black", "blue", "red"), lty = 1)
+
+```
+
+
+#Heart Attack
+
+Best Subset
+```{r}
+bestha = regsubsets(heartattack~.,data = ha_df, nvmax = 23, really.big = T)
+best.sum2 = summary(bestha)
+best.sum2$rss
+
+```
+
+age, race, weight, waistcirc, diabetes, chd, stroke, ldl, pircat
+
+Forward Subset
+```{r}
+forwardha = regsubsets(heartattack~., data =ha_df, nvmax = 23, method = "forward")
+forward.sum2 = summary(forwardha)
+forward.sum2$rss
+```
+
+height, diabetes, chd, stroke, modworkact, sleephrs, ldl, agecat, pircat
+
+Backward Subset
+```{r}
+backwardha = regsubsets(heartattack~., data = ha_df, nvmax = 23, method = "backward")
+backward.sum2 = summary(backwardha)
+backward.sum2$rss
+```
+
+race, weight, wasitcirc, diabetes, chd, stroke, ldl, agecat, pircat
+
+plots
+```{r}
+plot(best.sum2$rss, xlab = "Number of Variables",
+     ylab = "RSS", type = "l",
+     main = "Heart Attack")
+lines(forward.sum2$rss, col = "blue")
+lines(backward.sum2$rss, col = "red")
+legend(13,139,legend = c("Best", "Forward", "Backward"), col = c("black", "blue", "red"), lty = 1)
+```
+
+
+#Stroke
+
+Best Subset
+```{r}
+beststr = regsubsets(stroke~.,data = stroke_df, nvmax = 23, really.big = T)
+best.sum3 = summary(bestha)
+best.sum3$rss
+
+```
+
+age, race, weight, waistcirc, diabetes, chd, stroke, ldl, pircat
+
+Forward Subset
+```{r}
+forwardstr = regsubsets(stroke~., data =stroke_df, nvmax = 23, method = "forward")
+forward.sum3 = summary(forwardstr)
+forward.sum3$rss
+```
+
+height, diabetes, chd, stroke, modworkact, sleephrs, ldl, agecat, pircat
+
+Backward Subset
+```{r}
+backwardstr = regsubsets(stroke~., data = stroke_df, nvmax = 23, method = "backward")
+backward.sum3 = summary(backwardstr)
+backward.sum3$rss
+```
+
+race, weight, wasitcirc, diabetes, chd, stroke, ldl, agecat, pircat
+
+plots
+```{r}
+plot(best.sum3$rss, xlab = "Number of Variables",
+     ylab = "RSS", type = "l",
+     main = "Stroke", ylim = c(92.5,140))
+lines(forward.sum3$rss, col = "blue")
+lines(backward.sum3$rss, col = "red")
+legend(12,120,legend = c("Best", "Forward", "Backward"), col = c("black", "blue", "red"), lty = 1)
+```
+
+
+
+##Notes:
+
+Based on: gender, race, education, marital, bmi, waistcirc, pulsetype, gh, totchol, diabetes, drinks, cancer, modworkact, sleepdisorder, smoker, triglyceride, phq, sbp, dbp
+
+###CHD: 15 variable model
+ALL: gender, marital, bmi, waistcirc, pulsetype, gh, totchol, drinks, cancer, modworkact, sleepdisorder, smoker, triglyceride, sbp, dbp
+
+```{r}
+best.sum$rss[15]
+forward.sum$rss[15]
+backward.sum$rss[15]
+
+best.sum$rsq[15]
+forward.sum$rsq[15]
+backward.sum$rsq[15]
+```
+
+
+###HA: 15 Variable Model
+ALL: race, education, marital, bmi, waistcirc, gh, totchol, drinks, cancer, modworkact, sleepdisorder, triglyceride, phq, sbp, dbp
+
+```{r}
+best.sum2$rss[15]
+forward.sum2$rss[15]
+backward.sum2$rss[15]
+
+best.sum2$rsq[15]
+forward.sum2$rsq[15]
+backward.sum2$rsq[15]
+```
+
+
+
+###STR: 5 Variable Model
+
+BSS: bmi, waistcirc, totchol, modworkact, sleepdisorder (really bad compared to other two)
+
+FS: education, diabetes, drinks, cancer, phq
+
+BS: education, waistcirc, drinks, cancer, phq
+
+```{r}
+best.sum3$rss[5]
+forward.sum3$rss[5]
+backward.sum3$rss[5]
+
+best.sum3$rsq[15]
+forward.sum3$rsq[15]
+backward.sum3$rsq[15]
+```
+
+
+#Lasso and Ridge
+```{r}
+x.chd = model.matrix(chd~., chd_df)[-1]
+y.chd = chd_df$chd
+ridge.chd = glmnet(x.chd, y.chd, family = "binomial", alpha=0)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
