@@ -189,7 +189,7 @@ DT & $d$ & performed automatically by `cv.tree` \\
 
 ## Investigating Class Imbalance
 
-In order to address this question, we first take all positive classes (n=743) and randomly sample the negative classes to get data-sets with varying ratios of imbalance. Evaluate predictive performance of each model on each data-set using various validation sets in various level of balance $\{(50,50),(25,75),(10,90),(5,95),(1,99)\}$.
+In order to address this question, we first take all positive classes (n=743) and randomly sample the negative classes to get data-sets with varying ratios of imbalance (Figure 1). Evaluate predictive performance of each model on each data-set using various validation sets in various level of balance $\{(50,50),(25,75),(10,90),(5,95),(1,99)\}$.
 
 We adopt the following sample scheme for each validation set run. We first take all positive training examples not in the randomly selected validation set, and then randomly sample negative training classes in a series of ratios $\{(1:1),(1:2),(1:4),(1:8),(1:12),(1:14)\}$. We repeat this procedure 100 times for each ratio in order to get a sense of the variance of the error around the mean. 
 
@@ -345,6 +345,8 @@ Heart Disease & LR-lasso & $\lambda = 0$ & 0.921 & 0.009 & 1.000 \\
 \newpage
 
 ## Investigating Class Imbalance 
+
+
 
 ### Logistic Regression Results
 
