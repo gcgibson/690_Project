@@ -1,7 +1,7 @@
 ---
 title: "690 Project"
-author: "Bianca Doone"
-date: "April 26, 2018"
+author: "Bianca Doone, Jon Moyer, Casey Gibson"
+date: "May 10, 2018"
 output: pdf_document
 ---
 
@@ -257,9 +257,9 @@ Compared to the "Common Risk Factors" stated earlier, backward selection "correc
 ## Introduction 
 
 
-Due to the rarity of stroke, the NHANES dataset is very imbalanced, with around $4\%$ positives. We seek to answer the question, does applying different penalties provide a predictive advantage at varying levels of class imbalance? The intuition here is that predicting all responses into $1$ class achieves high accuracy when the data set is very imablanced. In particular, we can achieve $99\%$ accuracy on a test set of ninety-nine 1s and one 0 by simply guessing all 1s and ignoring covariates. This is another instance of the commonly found "local minimum" issue in statistical learning. The objective function has such a deep local minimum when guessing all 1s.
+Due to the rarity of stroke, the NHANES data-set is very imbalanced, with around $4\%$ positives. We seek to answer the question, does applying different penalties provide a predictive advantage at varying levels of class imbalance? The intuition here is that predicting all responses into $1$ class achieves high accuracy when the data set is very imbalanced. In particular, we can achieve $99\%$ accuracy on a test set of ninety-nine 1s and one 0 by simply guessing all 1s and ignoring covariates. This is another instance of the commonly found "local minimum" issue in statistical learning. The objective function has such a deep local minimum when guessing all 1s.
 
-In order to address this question, we first take all positive classes (n=743) and randomly sample the negative classes to get datasets with varying ratios of imbalance. Evaluate predictive performance of each model on each dataset using various validation sets in various level of balance $\{(50,50),(25,75),(10,90),(5,95),(1,99)\}$.
+In order to address this question, we first take all positive classes (n=743) and randomly sample the negative classes to get data-sets with varying ratios of imbalance. Evaluate predictive performance of each model on each data-set using various validation sets in various level of balance $\{(50,50),(25,75),(10,90),(5,95),(1,99)\}$.
  
 
 
@@ -458,12 +458,12 @@ The first thing to notice is that the regularization methods seem to offer littl
 
 The second thing to notice in the above plots is that none of the methods match the expected decrease in error. We expect such a decrease because of our sampling scheme design. As noted above, each time we increase the ratio, we are adding more negative classes, thus increasing the size of the training data. As long as we have a consistent estimator of the true error (which we do here), we would expect the error to decrease as a function of the training set size due to the law of large numbers.
 
-We also notice that when the ratio of the validation set is 1:1, the minimum error for all models is the training set in ratio of 1:1. As we get increasingly imbalanced the regulariation methods seem to have a minimum error at a ratio of 1:2, regardless of the validation set ratio. However, the unregularized model seems to reach a fixed point at 1:4. 
+We also notice that when the ratio of the validation set is 1:1, the minimum error for all models is the training set in ratio of 1:1. As we get increasingly imbalanced the regularization methods seem to have a minimum error at a ratio of 1:2, regardless of the validation set ratio. However, the unregularized model seems to reach a fixed point at 1:4. 
 
 ## QDA and LDA
 
 
-We extend our methodolgy above to the QDA and LDA setting. However, because of the difficulty in implementing regularized qda,lda we simply evaluate the performance of unregularized QDA/LDA in the same sampling scheme described above. 
+We extend our methodology above to the QDA and LDA setting. However, because of the difficulty in implementing regularized qda,lda we simply evaluate the performance of unregularized QDA/LDA in the same sampling scheme described above. 
 
 ```{r,echo=FALSE,message=FALSE,eval=FALSE}
 library(glmnet)
@@ -622,9 +622,15 @@ knitr::include_graphics('imgs/val_5_da.jpeg')
 Interestingly, the results are even more extreme in the case of QDA/LDA. Not only is the average error higher (as we can tell from the scale on the y-axis), the results steadily get worse as the ratio increases.  
 
 
-## Conclusions
+## Discussion
 
-We can see from the above experiments that class imbalance dramatically effects the results of classification methods. The literature has identified this as a problem, but a widely accepted solution has not yet been proposed. We suggest an exploratory measure to investigate this problem by generating plots like the above. It remains to be seen if this result holds accross other datasets and other models. 
+We can see from the above experiments that class imbalance dramatically effects the results of classification methods. The literature has identified this as a problem, but a widely accepted solution has not yet been proposed. We suggest an exploratory measure to investigate this problem by generating plots like the above. It remains to be seen if this result holds across other data-sets and other models. 
+
+
+# Conclusion
+ NHANES is a valuable data-set with many covariates and outcomes of interest. Although the data-set is not without issues, we were able to extract some interesting information on risk factors of heart disease. Our analysis of variable selection revealed that among our three outcomes of interest (heart attack, stroke, chd), subject's weight seems to be the most influential. Unfortunately, our predictive models based on 37 potential covariates were relatively unsuccessful because of the high level of class imbalance. We further investigated the robustness of our methods to the imbalanced data-set, which allowed for improved predictions. 
+
+
 
 
 
