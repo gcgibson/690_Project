@@ -34,6 +34,8 @@ stroke_df = stroke_df[complete.cases(stroke_df),]
 ```
 
 # Abstract
+
+An analysis of heart disease-related outcomes with a variety of approaches was conducted using data from the CDC's National Health and Examination Survey (NHANES). NHANES data collection periods from 2007-2008 to 2013-2014 were used in this work, resulting n a data set consisting 11307 cases and 37 variables, of which 2001 cases were complete. Variables consisted of demographic, dietary, physical examination, laboratory results, and questionnaire responses. This study contains three main avenues of investigation. The first is a study of variable seletion techniques, in order to .... The second is a series of prediction expriments to determine the useful of NHANES to the problem of heart disease classification and to study the performance of several classifiers. These classifiers include logistic regression (LR), support vector machines (SVM) with linear, polynomial, and radial kernels, k-nearest neighbors (KNN), and decision trees (DT). The third is a simulation study to . Results from variable selection indicate that ... Prediction experiment results were generally poor, with many techniques demonstrating little or no sensitivity. KNN performed slightly better than the other methods studied. Finally, results from investigating imbalance ...
 _Mention briefly what the study objective is, what the data is like (for example, the sample size, major characteristics of the sample subjects and the key variables included) and what are the statistical methods that you used in the paper. Then, you should focus on summarizing the findings._
 
 
@@ -101,7 +103,28 @@ kable(risk_df, caption = "Risk Factors for CHD, Heart Attack, and Stroke")
 
 ## NHANES Data
 
-We used the NHANES data set blah blah blah.
+The data used in this work came from the CDC's National Health and Nutrition Examination Survey (NHANES). NHANES contains a variaety of demographic, dietary, physical examination, laboratory results, and survey response variables. NHANES is conducted in two-year waves, with the most recent version of the study having its first two-year wave in 1999-2001. As of this writing, the current wave is 2017-2018 and is still ongoing.
+
+For our work, waves 2007-2008, 2009-2010, 2011-2012, and 2013-2014 were imported. These four waves were chosen to facilitate merging datasets, as variable names can differ between waves. With the chosen waves, the naming conventions of the variables of interest to us remained consistent. The initial import consisted of 11307 cases, with 580 columns.
+
+Several columns in the initial import did not represent variables thought to be related to heart disease. In addition, many columns contained administrative information for the NHANES study and did not properly represent variables. Still others represent information that needed to be summarized in some fashion. For example, some imported variables were individual items in a scale, such as the items used to compute PHQ-9 score. The PHQ-9 score is a measure of depression level composed of the sum of 9 question responses that each can assume values 0, 1, 2, and 3. Thus, PHQ-9 scores can range from 0 to 27, with higher scores indicating more severe depression. Other columns form the initial import were repeated observations of the same quantity. For example, systolic and diastolic blood pressure was recorded up to four times for individuals. The mean of these measurements was used as the corresponding blood pressure variable in our study. After perform these operations, the number of variables was reduced to 37. Of the 11307 total cases, 2001 were complete.
+
+The three outcomes used in this work were incidence of heart attack, stroke, and coronary heart disease (CHD). These were obtained from the NHANES "Medical Conditions (MCQ)" in which respondents were asked "Has a doctor or other health professional ever told you that you had ..." one of the three conditions. The table below summarizes counts and prevalences of these three conditions in our dataset.
+
+\begin{table}
+\caption{Prevalence of Heart Disease-Related Conditions} \label{tab:title}
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+Condition & Count & Total & Prevalence \\
+\midrule
+Heart Attack & 483 & 10980 & 0.044 \\
+Stroke & 420 & 10984 & 0.038 \\
+CHD & 447 & 10505 & 0.041 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
 
 ## Variable Selection
 
