@@ -13,7 +13,7 @@ library(formattable)
 library(dplyr)
 
 #data cleaning for Bianca's part
-nhanes0 = read.csv("C:/Users/bdoone/Downloads/nhanes2.csv")
+nhanes0 = read.csv("nhanes2.csv")
 nhanes2 = nhanes0[,c(2,4,5,6,8,11,12,13,15,16,17,18,19,20,21,22,26,28,29,31,32,33,34)]
 chd_df = nhanes2[,c(1:11, 15:19, 21:23, 12)]
 ha_df = nhanes2[,c(1:11, 15:19, 21:23,13)]
@@ -250,36 +250,208 @@ Compared to the "Common Risk Factors" stated earlier, backward selection "correc
 
 
 
+\newpage
 
 # Investigating Class Imbalance
 
 ## Introduction 
 
+
 Due to the rarity of stroke, the NHANES dataset is very imbalanced, with around $4\%$ positives. We seek to answer the question, does applying different penalties provide a predictive advantage at varying levels of class imbalance? The intuition here is that predicting all responses into $1$ class achieves high accuracy when the data set is very imablanced. In particular, we can achieve $99\%$ accuracy on a test set of ninety-nine 1s and one 0 by simply guessing all 1s and ignoring covariates. This is another instance of the commonly found "local minimum" issue in statistical learning. The objective function has such a deep local minimum when guessing all 1s.
 
 In order to address this question, we first take all positive classes (n=743) and randomly sample the negative classes to get datasets with varying ratios of imbalance. Evaluate predictive performance of each model on each dataset using various validation sets in various level of balance $\{(50,50),(25,75),(10,90),(5,95),(1,99)\}$.
  
-![Sampling Scheme](imgs/sample.png)
 
 
 We adopt the following sample scheme for each validation set run. We first take all positive training examples not in the randomly selected validation set, and then randomly sample negative training classes in a series of ratios $\{(1:1),(1:2),(1:4),(1:8),(1:12),(1:14)\}$. We repeat this procedure 100 times for each ratio in order to get a sense of the variance of the error around the mean. 
 
 
+
+```{r out.width='50%',echo=FALSE,fig.cap="Sampling Scheme",fig.align="center"}
+knitr::include_graphics('imgs/sample.png')
+```
+
+
 ## Logistic Regression Results
-![Validation set = (50,50)](imgs/val_1_total.jpeg)
+```{r,eval=FALSE,echo=FALSE,message=FALSE}
+library(glmnet)
+library(caret)
+library(rstanarm)
+## We need an outer for loop
 
-![Validation set = (25,75)](imgs/val_2_total.jpeg)
+for (val_size in 1:5){
+  num_sims <- 100
+  nprops <- 6
+  lr_lasso_mse_results_matrix <- matrix(NA,nrow=num_sims,ncol=nprops)
+  lr_ridge_mse_results_matrix <- matrix(NA,nrow=num_sims,ncol=nprops)
+  lr_none_mse_results_matrix <- matrix(NA,nrow=num_sims,ncol=nprops)
+  lr_bayes_results_matrix <- matrix(NA,nrow=num_sims,ncol=nprops)
+  
+  row_count <- 1
+  
+  pos <- nhanes2[nhanes2$stroke == 1,]
+  neg <- nhanes2[nhanes2$stroke == 2,]
+  
+  ### maintain validation set test size at 100
+  if (val_size == 1){
+    pos_test_index <- sample(1:100,50)
+    neg_test_index <- setdiff(1:100,pos_test_index)
+  }
+  
+  if (val_size == 2){
+    pos_test_index <- sample(1:100,25)
+    neg_test_index <- setdiff(1:100,pos_test_index)
+  }
+    
+  if (val_size == 3){
+    pos_test_index <- sample(1:100,10)
+    neg_test_index <- setdiff(1:100,pos_test_index)
+  }
+  if (val_size == 4){
+    pos_test_index <- sample(1:100,5)
+    neg_test_index <- setdiff(1:100,pos_test_index)
+  }
+  
+  if (val_size == 5){
+    pos_test_index <- sample(1:100,1)
+    neg_test_index <- setdiff(1:100,pos_test_index)
+  }
+  pos_train_index <- setdiff(1:nrow(pos),pos_test_index)
+    neg_train_index <- setdiff(1:nrow(neg),neg_test_index)
+    
+
+    pos_test  <- pos[pos_test_index,]
+    neg_test <- neg[neg_test_index,]
+    
+    pos  <- pos[pos_train_index,]
+    neg <- neg[neg_train_index,]
+    
+    test_data <- rbind(pos_test,neg_test)
+  
+  for (num_sim in 1:num_sims){
+    colIndex <- 1
+    for (i in c(1,2,4,8,10,14)){
+    
+    
+      ### Get all positive and negative classes
+      
+      ### start with 1/2 class balance 
+      neg_sample <- neg[sample(nrow(neg), i*nrow(pos)), ]
+      
+      nhanes3 <- rbind(pos,neg_sample)
+      nhanes3 <- nhanes3[sample(nrow(nhanes3)),]
+      
+      
+      #Perform 10 fold cross validation
+        # Segment data for cross validation
+        trainData <- nhanes3
+        x_train <- trainData[ , ! colnames(trainData) %in% c("seqn","stroke") ]
+        y_train <- trainData[,colnames(trainData) %in% c("stroke") ]
+        x_test <- testData[ , ! colnames(testData) %in% c("seqn","stroke") ]
+        y_test <- testData[,colnames(trainData) %in% c("stroke") ]
+        
+        #get data into correct format
+        x_train <- data.matrix(x_train)
+        y_train <- data.matrix(y_train) -1
+        
+        x_test <- data.matrix(x_test)
+        y_test <- data.matrix(y_test)-1
+        
+        x_train[is.na(x_train)] <- 0
+        y_train[is.na(y_train)] <- 0
+        
+        x_test[is.na(x_test)] <- 0
+        y_test[is.na(y_test)] <- 0 
+        
+        df_train <- data.frame(x_train=x_train,y_train=y_train)
+        df_test <- data.frame(x_train = x_test, y_train = y_test)
+        
+        cv.lasso <- cv.glmnet(x_train, y_train, alpha = 1, family = "binomial")
+        logistic_regression_lasso_penalty_preds <- round(predict(cv.lasso,x_test,type="response"))
+        
+        model <- glm (stroke ~ ., data = df_train, family = binomial)
+        logistic_regression_no_penalty_preds <- round(predict(model,df_test, type = 'response'))
+        
+        cv.ridge <- cv.glmnet(x_train, y_train, alpha = 0, family = "binomial")
+        logistic_regression_ridge_penalty_preds <- round(predict(cv.ridge,x_test,type="response"))
+        
+       # t_prior <- student_t(df = 7, location = 0, scale = 2.5)
+       # post1 <- stan_glm(stroke ~ ., data = df_train,
+        #                 family = binomial(link = "logit"), 
+         #                 prior = t_prior, prior_intercept = t_prior,
+          #                seed = 1)
+        
+        
+       # ppd <- posterior_predict(post1,newdata=df_test,type="response")
+        #bayesian_logistic_regression_preds <- round(colMeans(ppd))
+        
+        lr_none_mse_results_matrix[num_sim,colIndex] <- mean(logistic_regression_no_penalty_preds-y_test)^2
+        lr_ridge_mse_results_matrix[num_sim,colIndex] <- mean(logistic_regression_ridge_penalty_preds-y_test)^2
+       # lr_bayes_results_matrix[row_count,j] <- mean(bayesian_logistic_regression_preds-y_test)^2
+        lr_lasso_mse_results_matrix[num_sim,colIndex] <- mean(logistic_regression_lasso_penalty_preds-y_test)^2
+        
+      
+      #plot.roc(as.numeric(y_test),as.numeric(logistic_regression_no_penalty_preds),percent=TRUE,col="#1c61b6",  print.auc=TRUE)
+      #plot.roc(as.numeric(y_test),as.numeric(logistic_regression_ridge_penalty_preds),percent=TRUE,col="#1c61b6",  print.auc=TRUE)
+      #plot.roc(as.numeric(y_test),as.numeric(logistic_regression_lasso_penalty_preds),percent=TRUE,col="#1c61b6",  print.auc=TRUE)
+    #  plot.roc(as.numeric(y_test),as.numeric(bayesian_logistic_regression_preds),percent=TRUE,col="#1c61b6",  print.auc=TRUE)
+      colIndex <- colIndex + 1
+    }
+  }
+  
+  
+  fullLassoLr <- colMeans(lr_lasso_mse_results_matrix)
+  fullRidgeLr <- colMeans(lr_ridge_mse_results_matrix)
+  fullBayesLr <- colMeans(lr_none_mse_results_matrix)
+  fullNoneLr <- colMeans(lr_none_mse_results_matrix)
+  
+  library(matrixStats)
+  ciLassoLr <- colQuantiles(lr_lasso_mse_results_matrix,probs=c(.025,.975))
+  ciRidgeLr <- colQuantiles(lr_ridge_mse_results_matrix,probs=c(.025,.975))
+  ciBayesLr <- colQuantiles(lr_none_mse_results_matrix,probs=c(.025,.975))
+  ciNoneLr <- colQuantiles(lr_none_mse_results_matrix,probs=c(.025,.975))
+  
+  
+  plot(fullRidgeLr,type='l',ylim=c(0,.015),col="black",xaxt = "n",xlab="Ratio of +:-",ylab="Error",main="Ridge")
+  axis(1, at=1:nprops,cex.axis=.75, labels=c("1:1","1:2","1:4","1:8","1:12","1:14"))
+  polygon(c(1:nprops,rev(1:nprops)),c(ciRidgeLr[,1],rev(ciRidgeLr[,2])),col = "grey75", border = FALSE)
+  lines(1:nprops,fullRidgeLr)
+  
+  
+  plot(fullLassoLr,type='l',ylim=c(0,.015),col="black",xaxt = "n",xlab="Ratio of +:-",ylab="Error",main="Lasso")
+  axis(1, at=1:nprops,cex.axis=.75, labels=c("1:1","1:2","1:4","1:8","1:12","1:14"))
+  polygon(c(1:nprops,rev(1:nprops)),c(ciLassoLr[,1],rev(ciLassoLr[,2])),col = "grey75", border = FALSE)
+  lines(1:nprops,fullLassoLr)
+  
+  plot(fullNoneLr,type='l',ylim=c(0,.015),col="black",xaxt = "n",xlab="Ratio of +:-",ylab="Error",main="None")
+  axis(1, at=1:nprops,cex.axis=.75,labels=c("1:1","1:2","1:4","1:8","1:12","1:14"))
+  polygon(c(1:nprops,rev(1:nprops)),c(ciNoneLr[,1],rev(ciNoneLr[,2])),col = "grey75", border = FALSE)
+  lines(1:nprops,fullNoneLr)
+}
+```
 
 
+```{r out.width='70%',echo=FALSE,fig.cap="(50,50) Validation Split",fig.align="center"}
+knitr::include_graphics('imgs/val_1_total.jpeg')
 
+```
 
-![Validation set = (10,90)](imgs/val_3_total.jpeg)
+```{r out.width='70%',echo=FALSE,fig.cap="(25,75) Validation Split",fig.align="center"}
+knitr::include_graphics('imgs/val_2_total.jpeg')
+```
 
+```{r out.width='70%',echo=FALSE,fig.cap="(10,90) Validation Split",fig.align="center"}
+knitr::include_graphics('imgs/val_3_total.jpeg')
+```
 
+```{r out.width='70%',echo=FALSE,fig.cap="(5,95) Validation Split",fig.align="center"}
+knitr::include_graphics('imgs/val_4_total.jpeg')
+```
 
-![Validation set = (5,95)](imgs/val_4_total.jpeg)
+```{r out.width='70%',echo=FALSE,fig.cap="(1,99) Validation Split",fig.align="center"}
+knitr::include_graphics('imgs/val_5_total.jpeg')
+```
 
-![Validation set = (1,99)](imgs/val_5_total.jpeg)
 
 
 The first thing to notice is that the regularization methods seem to offer little advantage over unregularized logistic regression in the presence of class imbalance. Regularization does not seem to overcome the local minimum issue. Further work should address other strategies for avoiding this issue. 
@@ -293,6 +465,161 @@ We also notice that when the ratio of the validation set is 1:1, the minimum err
 
 We extend our methodolgy above to the QDA and LDA setting. However, because of the difficulty in implementing regularized qda,lda we simply evaluate the performance of unregularized QDA/LDA in the same sampling scheme described above. 
 
+```{r,echo=FALSE,message=FALSE,eval=FALSE}
+library(glmnet)
+library(caret)
+library(rstanarm)
+## We need an outer for loop
+
+for (val_size in 1:5){
+  num_sims <- 100
+  nprops <- 6
+  qda_mse_results_matrix <- matrix(NA,nrow=num_sims,ncol=nprops)
+  lda_mse_results_matrix <- matrix(NA,nrow=num_sims,ncol=nprops)
+
+  row_count <- 1
+  
+  pos <- nhanes2[nhanes2$stroke == 1,]
+  neg <- nhanes2[nhanes2$stroke == 2,]
+  
+  ### maintain validation set test size at 100
+  if (val_size == 1){
+    pos_test_index <- sample(1:100,50)
+    neg_test_index <- setdiff(1:100,pos_test_index)
+  }
+  
+  if (val_size == 2){
+    pos_test_index <- sample(1:100,25)
+    neg_test_index <- setdiff(1:100,pos_test_index)
+  }
+  
+  if (val_size == 3){
+    pos_test_index <- sample(1:100,10)
+    neg_test_index <- setdiff(1:100,pos_test_index)
+  }
+  if (val_size == 4){
+    pos_test_index <- sample(1:100,5)
+    neg_test_index <- setdiff(1:100,pos_test_index)
+  }
+  
+  if (val_size == 5){
+    pos_test_index <- sample(1:100,1)
+    neg_test_index <- setdiff(1:100,pos_test_index)
+  }
+  pos_train_index <- setdiff(1:nrow(pos),pos_test_index)
+  neg_train_index <- setdiff(1:nrow(neg),neg_test_index)
+  
+  
+  pos_test  <- pos[pos_test_index,]
+  neg_test <- neg[neg_test_index,]
+  
+  pos  <- pos[pos_train_index,]
+  neg <- neg[neg_train_index,]
+  
+  test_data <- rbind(pos_test,neg_test)
+  
+  for (num_sim in 1:num_sims){
+    colIndex <- 1
+    for (i in c(1,2,4,8,10,14)){
+      
+      
+      ### Get all positive and negative classes
+      
+      ### start with 1/2 class balance 
+      neg_sample <- neg[sample(nrow(neg), i*nrow(pos)), ]
+      
+      nhanes3 <- rbind(pos,neg_sample)
+      nhanes3 <- nhanes3[sample(nrow(nhanes3)),]
+      
+      
+      #Perform 10 fold cross validation
+      # Segment data for cross validation
+      trainData <- nhanes3
+      x_train <- trainData[ , ! colnames(trainData) %in% c("seqn","stroke") ]
+      y_train <- trainData[,colnames(trainData) %in% c("stroke") ]
+      x_test <- testData[ , ! colnames(testData) %in% c("seqn","stroke") ]
+      y_test <- testData[,colnames(trainData) %in% c("stroke") ]
+      
+      #get data into correct format
+      x_train <- data.matrix(x_train)
+      y_train <- data.matrix(y_train) -1
+      
+      x_test <- data.matrix(x_test)
+      y_test <- data.matrix(y_test)-1
+      
+      x_train[is.na(x_train)] <- 0
+      y_train[is.na(y_train)] <- 0
+      
+      x_test[is.na(x_test)] <- 0
+      y_test[is.na(y_test)] <- 0 
+      
+      df_train <- data.frame(x_train=x_train,y_train=y_train)
+      df_test <- data.frame(x_train = x_test, y_train = y_test)
+      
+      lda.model = lda (stroke ~., data=df_train)
+      predmodel.train.lda = predict(lda.model, newdata=df_test)
+      
+      qda.model = qda (stroke ~., data=df_train)
+      predmodel.train.qda = predict(qda.model, newdata=df_test)
+      
+      lda_mse_results_matrix[num_sim,colIndex] <- mean((df_test$stroke-as.numeric(predmodel.train.lda$class)-1)^2)
+      qda_mse_results_matrix[num_sim,colIndex] <- mean((df_test$stroke-as.numeric(predmodel.train.qda$class)-1)^2)
+      
+      colIndex <- colIndex + 1
+    }
+  }
+  
+  
+  fullLda <- colMeans(lda_mse_results_matrix)
+  fullQda <- colMeans(qda_mse_results_matrix)
+
+  
+  library(matrixStats)
+  ciLda <- colQuantiles(lda_mse_results_matrix,probs=c(.025,.975))
+  ciQda <- colQuantiles(qda_mse_results_matrix,probs=c(.025,.975))
+
+  
+  plot(fullLda,type='l',col="black",xaxt = "n",xlab="Ratio of +:-",ylab="Error",main="LDA")
+  axis(1, at=1:nprops,cex.axis=.75, labels=c("1:1","1:2","1:4","1:8","1:12","1:14"))
+  polygon(c(1:nprops,rev(1:nprops)),c(ciLda[,1],rev(ciLda[,2])),col = "grey75", border = FALSE)
+  lines(1:nprops,fullLda)
+  
+  
+  plot(fullQda,type='l',col="black",xaxt = "n",xlab="Ratio of +:-",ylab="Error",main="QDA")
+  axis(1, at=1:nprops,cex.axis=.75, labels=c("1:1","1:2","1:4","1:8","1:12","1:14"))
+  polygon(c(1:nprops,rev(1:nprops)),c(ciQda[,1],rev(ciQda[,2])),col = "grey75", border = FALSE)
+  lines(1:nprops,fullQda)
+  
+  
+}
+```
+
+
+
+```{r out.width='65%',echo=FALSE,fig.cap="(50,50) Validation Split",fig.align="center"}
+knitr::include_graphics('imgs/val_1_da.jpeg')
+knitr::include_graphics('imgs/val_2_da.jpeg')
+
+```
+
+
+
+```{r out.width='70%',echo=FALSE,fig.cap="(10,90) Validation Split",fig.align="center"}
+
+knitr::include_graphics('imgs/val_3_da.jpeg')
+``` 
+
+```{r out.width='70%',echo=FALSE,fig.cap="(5,95) Validation Split",fig.align="center"}
+
+knitr::include_graphics('imgs/val_4_da.jpeg')
+knitr::include_graphics('imgs/val_5_da.jpeg')
+``` 
+
+```{r out.width='70%',echo=FALSE,fig.cap="(1,99) Validation Split",fig.align="center"}
+
+
+```
+Interestingly, the results are even more extreme in the case of QDA/LDA. Not only is the average error higher (as we can tell from the scale on the y-axis), the results steadily get worse as the ratio increases.  
 
 
 ## Conclusions
