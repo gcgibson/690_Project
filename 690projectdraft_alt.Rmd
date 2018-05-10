@@ -35,81 +35,32 @@ stroke_df = stroke_df[complete.cases(stroke_df),]
 
 # Abstract
 
-An analysis of heart disease-related outcomes with a variety of approaches was conducted using data from the CDC's National Health and Examination Survey (NHANES). NHANES data collection periods from 2007-2008 to 2013-2014 were used in this work, resulting n a data set consisting 11307 cases and 37 variables, of which 2001 cases were complete. Variables consisted of demographic, dietary, physical examination, laboratory results, and questionnaire responses. This study contains three main avenues of investigation. The first is a study of variable seletion techniques, in order to .... The second is a series of prediction expriments to determine the useful of NHANES to the problem of heart disease classification and to study the performance of several classifiers. These classifiers include logistic regression (LR), support vector machines (SVM) with linear, polynomial, and radial kernels, k-nearest neighbors (KNN), and decision trees (DT). The third is a simulation study to . Results from variable selection indicate that ... Prediction experiment results were generally poor, with many techniques demonstrating little or no sensitivity. KNN performed slightly better than the other methods studied. Finally, results from investigating imbalance ...
-_Mention briefly what the study objective is, what the data is like (for example, the sample size, major characteristics of the sample subjects and the key variables included) and what are the statistical methods that you used in the paper. Then, you should focus on summarizing the findings._
-
+An analysis of heart disease-related outcomes with a variety of approaches was conducted using data from the CDC's National Health and Examination Survey (NHANES). NHANES waves 2007-2008 to 2013-2014 were used in this work, resulting n a data set consisting 11307 cases and 37 variables, of which 2001 cases were complete. Variables consisted of demographic, dietary, physical examination, laboratory results, and questionnaire responses. This study contains three main avenues of investigation. The first is a study of variable selection techniques in order to asses what factors influence heart disease. We analyze both environmental and genetic factors contributing to stroke, heart disease, and heart attack. The second is a series of prediction expriments to determine the useful of NHANES to the problem of heart disease classification and to study the performance of several classifiers. These classifiers include logistic regression (LR), support vector machines (SVM) with linear, polynomial, and radial kernels, k-nearest neighbors (KNN), and decision trees (DT). The third is a simulation study to assess the impact of the imbalance between positive and negative cases in the data-set. Results from variable selection indicate that controllable risk factors seem to be more influential than uncontrollable ones, with weight being common across all 3 outcomes. Prediction experiment results were generally poor, with many techniques demonstrating little or no sensitivity. KNN performed slightly better than the other methods studied. Finally, results from investigating imbalance show that including all the negative classes may not result in the minimum prediction error. 
 
 # Introduction
-_Describe details about how the data set was collected and the variables in the data set. Also describe the scientific questions of interest. Give an overview of how you will address the scientific questions using the appropriate statistical learning methods._
 
-## Common Risk Factors for CHD, Heart Attack, and Stroke
+Heart disease is the leading cause of death for both men and women. About 1 in 4 deaths are the result of heart disease and about $47\%$ of Americans have at least 1 risk factor. The list of risk factors is long but includes common conditions such as 
 
-In the table below, you will see the common risk factors for Coronary Heart Disease, Heart Attack, and Stroke. All three outcomes have similar controllable risk factors, specifically high blood pressure, high cholesterol, diabetes, and smoking. It is also important to note that a heart attack results from Coronary Heart Disease, and that Coronary Heart Disease is also a risk factor for stroke.
+- High Blood Pressure
+- High Cholesterol
+- Diabetes 
+- Unhealthy Diet
+- Mental Health
+- Lack of Exercise 
+- Obesity 
+- Alcohol
+- Smoking
+- Genetics \& Family history
 
-```{r, echo=FALSE}
-chd_risk = c("High Cholesterol",
-             "High Blood Pressure",
-             "Diabetes",
-             "Overweight/Obesity",
-             "Smoking",
-             "Lack of Physical Activity",
-             "Unhealthy Diet",
-             "Stress",
-             "Age (older)",
-             "Gender",
-             "Family History",
-             "", "", "", "", "")
-#https://www.nhlbi.nih.gov/health-topics/coronary-heart-disease
+Understanding what additional factors effect the prevelance of heart disease is critical in prevention. Building predictive models may help practicing clinicians identify potential sufferers of heart disease, leading to expeditious and effective treatment. In this analysis, we try and tackle both aspects: udnerstanding what covariates influence heart disease, and building models to identify patients at risk.
 
-#Note that Heart Attack can result from CHD
-ha_risk = c("High Cholesterol",
-            "High Blood Pressure",
-            "Diabetes",
-            "Overweight/Obesity",
-            "Smoking",
-            "Lack of Physical Activity",
-            "Unhealthy Diet",
-            "Stress",
-            "Age (older)",
-            "Gender",
-            "Family History",
-            "", "", "", "", "")
-#https://www.nhlbi.nih.gov/health-topics/heart-attack
+The data used in this work came from the CDC's National Health and Nutrition Examination Survey (NHANES), which contains a variety of demographic, dietary, physical examination, laboratory results, and survey response variables. NHANES is conducted in two-year waves, with the most recent version of the study having its first two-year wave in 1999-2001. As of this writing, the current wave is 2017-2018 and is still ongoing.
 
-#Note that Stroke can result from CHD
-stroke_risk = c("High Blood Pressure",
-                "Diabetes",
-                "Heart Diseases",
-                "Smoking",
-                "Age (older)",
-                "Gender",
-                "Race/Ethnicity",
-                "Family History",
-                "Brain Aneurysms",
-                "Alcohol/Drug Use",
-                "Lack of Physical Activity",
-                "Overweight/Obesity",
-                "Stress/Depression",
-                "High Cholesterol",
-                "Unhealthy Diet",
-                "NSAIDs")
-#https://www.nhlbi.nih.gov/health-topics/stroke
+For our work, waves 2007-2008, 2009-2010, 2011-2012, and 2013-2014 were download and joined. These four waves were chosen to facilitate merging datasets, as variable names can differ between waves. Variable naming conventions across the four chosen waves remained consistent for variables of interest to us. The initial import consisted of 11307 cases, with 580 columns.
 
-risk_df = t(rbind(chd_risk, ha_risk, stroke_risk))
-colnames(risk_df) = c("CHD", "HeartAttack", "Stroke")
+Several columns in the initial import did not represent variables thought to be related to heart disease. In addition, many columns contained administrative information for the NHANES study and did not represent actual variables. Other columns represented information that needed to be summarized in some fashion. For example, some imported variables were individual items in a scale, such as the items used to compute PHQ-9 score. The PHQ-9 score is a measure of depression level composed of the sum of 9 question responses that each can assume values 0, 1, 2, and 3. Thus, PHQ-9 scores can range from 0 to 27, with higher scores indicating more severe depression. Other columns form the initial import were repeated observations of the same quantity. For example, systolic and diastolic blood pressure was recorded up to four times for individuals. The mean of these measurements was used as the corresponding blood pressure variable in our study. After perform these operations, the number of variables was reduced to 37. Of the 11307 total cases, 2001 were complete.
 
-kable(risk_df, caption = "Risk Factors for CHD, Heart Attack, and Stroke")
-```
-
-## NHANES Data
-
-The data used in this work came from the CDC's National Health and Nutrition Examination Survey (NHANES). NHANES contains a variaety of demographic, dietary, physical examination, laboratory results, and survey response variables. NHANES is conducted in two-year waves, with the most recent version of the study having its first two-year wave in 1999-2001. As of this writing, the current wave is 2017-2018 and is still ongoing.
-
-For our work, waves 2007-2008, 2009-2010, 2011-2012, and 2013-2014 were imported. These four waves were chosen to facilitate merging datasets, as variable names can differ between waves. With the chosen waves, the naming conventions of the variables of interest to us remained consistent. The initial import consisted of 11307 cases, with 580 columns.
-
-Several columns in the initial import did not represent variables thought to be related to heart disease. In addition, many columns contained administrative information for the NHANES study and did not properly represent variables. Still others represent information that needed to be summarized in some fashion. For example, some imported variables were individual items in a scale, such as the items used to compute PHQ-9 score. The PHQ-9 score is a measure of depression level composed of the sum of 9 question responses that each can assume values 0, 1, 2, and 3. Thus, PHQ-9 scores can range from 0 to 27, with higher scores indicating more severe depression. Other columns form the initial import were repeated observations of the same quantity. For example, systolic and diastolic blood pressure was recorded up to four times for individuals. The mean of these measurements was used as the corresponding blood pressure variable in our study. After perform these operations, the number of variables was reduced to 37. Of the 11307 total cases, 2001 were complete.
-
-The three outcomes used in this work were incidence of heart attack, stroke, and coronary heart disease (CHD). These were obtained from the NHANES "Medical Conditions (MCQ)" in which respondents were asked "Has a doctor or other health professional ever told you that you had ..." one of the three conditions. The table below summarizes counts and prevalences of these three conditions in our dataset.
+The three outcomes used in this work were incidence of heart attack, stroke, and coronary heart disease (CHD). These were obtained from the NHANES "Medical Conditions (MCQ)" in which respondents were asked "Has a doctor or other health professional ever told you that you had ..." one of the three conditions. Table 1 summarizes the counts and prevalences of these three conditions in our dataset.
 
 \begin{table}
 \caption{Prevalence of Heart Disease-Related Conditions} \label{tab:title}
@@ -126,17 +77,13 @@ CHD & 447 & 10505 & 0.041 \\
 \end{center}
 \end{table}
 
-## Variable Selection
+We analyzed these heart disease-related outcomes in three ways. The first was variable selection ...
 
-Anything to go here?
+The second analysis we conducted was a series of prediction experiments using a variety of methods to classify heart disease-related outcomes with NHANES data was conducted. There are two primary goals of this exercise. The first is to see how well NHANES data can be used to classify instance of heart disease-related outcomes such as heart attack, stroke, and coronary heart disease (CHD). The second was to evaluate the performance of classification methods relative to each other and assess if one method significantly outperformed the others. The classification methods used were as follows: logistic regression (LR), with both lasso and ridge penalties; support vector machines (SVM), using linear, polynomial, and radial kernels; k-nearest neighbors (KNN), and; decision trees (DT). 
 
-## Prediction Experiments
+Finally, the third analysis was a study of the effects of imbalance in levels of the outcome variables. Due to the rarity of stroke, the NHANES data-set is very imbalanced, with around $4\%$ positives. We seek to answer the question, does applying different penalties provide a predictive advantage at varying levels of class imbalance? The intuition here is that predicting all responses into $1$ class achieves high accuracy when the data set is very imbalanced. In particular, we can achieve $99\%$ accuracy on a test set of ninety-nine 1s and one 0 by simply guessing all 1s and ignoring covariates. This is another instance of the commonly found "local minimum" issue in statistical learning. The objective function has such a deep local minimum when guessing all 1s.
 
-A series of prediction experiments using a variety of methods to classify heart disease-related outcomes with NHANES data was conducted. There are two primary goals of this exercise. The first is to see how well NHANES data can be used to classify instance of heart disease-related outcomes such as heart attack, stroke, and coronary heart disease (CHD). The second was to evaluate the performance of classification methods relative to each other and assess if one method significantly outperformed the others. The classification methods used were as follows: logistic regression (LR), with both lasso and ridge penalties; support vector machines (SVM), using linear, polynomial, and radial kernels; k-nearest neighbors (KNN), and; decision trees (DT). 
-
-## Investigating Class Imbalance
-
-Due to the rarity of stroke, the NHANES data-set is very imbalanced, with around $4\%$ positives. We seek to answer the question, does applying different penalties provide a predictive advantage at varying levels of class imbalance? The intuition here is that predicting all responses into $1$ class achieves high accuracy when the data set is very imbalanced. In particular, we can achieve $99\%$ accuracy on a test set of ninety-nine 1s and one 0 by simply guessing all 1s and ignoring covariates. This is another instance of the commonly found "local minimum" issue in statistical learning. The objective function has such a deep local minimum when guessing all 1s.
+In the Methods section, provide an overview of the procedures use for each analysis stream. In the Results and Discussion section, we describe results of our work and discuss conclusions of the research.
 
 \newpage
 
@@ -220,7 +167,7 @@ For SVM, the following kernels were employed: linear, polynomial, and radial. Fo
 
 For KNN, the primary hyperparamter is the number of nearest neighbors, $K$. For DT, the primary hyperparameter is tree-depth $d$. In the case of DT, the `tree` function is used to build the largest possible tree, then `cv.tree` function is used to prune the tree.
 
-The table below lists the relevant hyperparameter(s) and the set of hyperparameter searched for each method. Both LR methods use $\lambda$ as their hyperparamter. All three SVM kernels use $C$ and $\epsilon_i$ as hyperparameters, while polynomial and radial kernels use $\gamma$.
+Table 2 lists the relevant hyperparameter(s) and the set of hyperparameter searched for each method. Both LR methods use $\lambda$ as their hyperparamter. All three SVM kernels use $C$ and $\epsilon_i$ as hyperparameters, while polynomial and radial kernels use $\gamma$.
 
 \begin{table}
 \caption {Hyperparameters for Each Method} \label{tab:title}
@@ -246,13 +193,17 @@ In order to address this question, we first take all positive classes (n=743) an
 
 We adopt the following sample scheme for each validation set run. We first take all positive training examples not in the randomly selected validation set, and then randomly sample negative training classes in a series of ratios $\{(1:1),(1:2),(1:4),(1:8),(1:12),(1:14)\}$. We repeat this procedure 100 times for each ratio in order to get a sense of the variance of the error around the mean. 
 
+```{r out.width='50%',echo=FALSE,fig.cap="Sampling Scheme",fig.align="center"}
+knitr::include_graphics('imgs/sample.jpg')
+```
+
 \newpage
 
 # Results and Discussion
 
 ## Forward Selection vs. Backward Selection
 
-For all three outcome variables, backward selection chose a model with a lower AIC for all 3 outcomes as compared to forward selection.
+For all three outcome variables, backward selection chose a model with a lower AIC for all 3 outcomes as compared to forward selection. Results are displayed in Table 3.
 
 ```{r, echo=FALSE}
 nhanes_aic = as.data.frame(matrix(c(900.27, 909.51, 1052.00, 1067.70, 804.3, 814.96), nrow = 3, byrow = T))
@@ -264,7 +215,7 @@ kable(nhanes_aic, caption = "AIC for Backward and Forward Selection")
 
 ### Models Selected Through Backward Selection
 
-The table below shows the predictors that were chosen using backward selection for CHD, Heart Attack, and Stroke.
+Table 4 shows the predictors that were chosen using backward selection for CHD, Heart Attack, and Stroke.
 
 ```{r, echo=FALSE}
 #marital + bmi + waistcirc + gh + totchol + smoker
@@ -299,11 +250,11 @@ colnames(results_df) = c("CHD (6 Variables)", "Heart Attack (7 Variables)", "Str
 kable(results_df, caption = "Predictors Chosen Using Backward Selection")
 ```
 
+Compared to the "Common Risk Factors" stated earlier, backward selection "correctly" selected those in boldface in Table 5. Based on these results, it seems that the risk factors that can be controlled have the most significant effect on these outcomes. Across the board, maintaining a healthy weight could lower your risk for all three outcomes.
+
 \begin{table}
 \centering
-\caption{Predictors Chosen Using Backward Selection}
-\label{tab: table1}
-
+\caption{Predictors Chosen Using Backward Selection}\label{tab: table1}
 \begin{tabular}{|l|l|l|}
 \hline
 CHD & Heart Attack & Stroke \\
@@ -328,17 +279,15 @@ Family History & Family History & Lack of Physical Activity \\
 \end{tabular}
 \end{table}
 
-Compared to the "Common Risk Factors" stated earlier, backward selection "correctly" selected those in boldface in the table above. Based on these results, it seems that the risk factors that can be controlled have the most significant effect on these outcomes. Across the board, maintaining a healthy weight could lower your risk for all three outcomes. 
-
 ## Prediction Experiments
 
-Table XX gives prediction experiment results for each outcome by method. Included are the optimal hyperparameters for each method, as well as classification accuracy, sensitivity, and specificity. For the SVM method, if kernel isn't specified then the listed hyperparameters apply to their particular kernels. For example, for the heart attack outcome, the optimal values of $C$ and $\epsilon_i$ are the same for linear, polynomial, and radial kernels, while the indicated $gamma$ value applies only to polynomial and radial kernels.
+Table 6 gives prediction experiment results for each outcome by method. Included are the optimal hyperparameters for each method, as well as classification accuracy, sensitivity, and specificity. For the SVM method, if kernel isn't specified then the listed hyperparameters apply to their particular kernels. For example, for the heart attack outcome, the optimal values of $C$ and $\epsilon_i$ are the same for linear, polynomial, and radial kernels, while the indicated $gamma$ value applies only to polynomial and radial kernels.
 
 Results in general are quite poor. While accuracy is generally high, this is due to the fact that most methods simply didn't classify anyone as having the condition. Since the outcomes of interest are rare, the resulting accuracy is high. Indeed, most methods demonstrate little ability to correctly classify individuals with the condition in question. Only KNN consistently displayed any sort of sensitivity, with 0.083, 0.083, 0.088, and 0.16 for heart attack, stroke, CHD, and heart disease, respectively.
 
 Based on these results, KNN seemed to perform the best. However, as evidenced by its low sensitivities, any advantage it might have over the other methods is marginal. It appears that NHANES data (or at least, the features chosen for this study) are ill-suited to predicting instances of heart disease-related outcomes.
 
-The poor performance of most methods could be explained by the severe class imbalance of the outcomes. When outcome prevalence is very low, classifiers can have difficult making predictions with high sensivity. In these cases, alternative classification metrics such as G-mean and $F$-measure should be used to assess classifier performance. Future work should involve re-analyzing the classification methods using these measures.
+The poor performance of most methods could be explained by the severe class imbalance of the outcomes. When outcome prevalence is very low, classifiers can have difficult making predictions with high sensivity. In these cases, alternative classification metrics such as G-mean and $F$-measure should be used to assess classifier performance (Lin and Chen, 2012). Future work should involve re-analyzing the classification methods using these measures.
 
 \begin{table}
 \caption {Prediction Experiment Results} \label{tab:title}
@@ -396,10 +345,6 @@ Heart Disease & LR-lasso & $\lambda = 0$ & 0.921 & 0.009 & 1.000 \\
 \newpage
 
 ## Investigating Class Imbalance 
-
-```{r out.width='50%',echo=FALSE,fig.cap="Sampling Scheme",fig.align="center"}
-knitr::include_graphics('imgs/sample.jpg')
-```
 
 ### Logistic Regression Results
 
@@ -586,7 +531,8 @@ The first thing to notice is that the regularization methods seem to offer littl
 
 The second thing to notice in the above plots is that none of the methods match the expected decrease in error. We expect such a decrease because of our sampling scheme design. As noted above, each time we increase the ratio, we are adding more negative classes, thus increasing the size of the training data. As long as we have a consistent estimator of the true error (which we do here), we would expect the error to decrease as a function of the training set size due to the law of large numbers.
 
-We also notice that when the ratio of the validation set is 1:1, the minimum error for all models is the training set in ratio of 1:1. As we get increasingly imbalanced the regularization methods seem to have a minimum error at a ratio of 1:2, regardless of the validation set ratio. However, the unregularized model seems to reach a fixed point at 1:4. 
+We also notice that when the ratio of the validation set is 1:1, the minimum error for all models is the training set in ratio of 1:1. As we get increasingly imbalanced the regularization methods seem to have a minimum error at a ratio of 1:2, regardless of the validation set ratio. However, the unregularized model seems to reach a fixed point at 1:4.
+
 ### QDA and LDA
 
 We extend our methodology above to the QDA and LDA setting. However, because of the difficulty in implementing regularized qda,lda we simply evaluate the performance of unregularized QDA/LDA in the same sampling scheme described above. 
@@ -741,23 +687,29 @@ knitr::include_graphics('imgs/val_4_da.jpeg')
 knitr::include_graphics('imgs/val_5_da.jpeg')
 ``` 
 
-```{r out.width='70%',echo=FALSE,fig.cap="(1,99) Validation Split",fig.align="center"}
-
-
-```
 Interestingly, the results are even more extreme in the case of QDA/LDA. Not only is the average error higher (as we can tell from the scale on the y-axis), the results steadily get worse as the ratio increases.  
-
-
-## Discussion
 
 We can see from the above experiments that class imbalance dramatically effects the results of classification methods. The literature has identified this as a problem, but a widely accepted solution has not yet been proposed. We suggest an exploratory measure to investigate this problem by generating plots like the above. It remains to be seen if this result holds across other data-sets and other models. 
 
-
 # Conclusion
- NHANES is a valuable data-set with many covariates and outcomes of interest. Although the data-set is not without issues, we were able to extract some interesting information on risk factors of heart disease. Our analysis of variable selection revealed that among our three outcomes of interest (heart attack, stroke, chd), subject's weight seems to be the most influential. Unfortunately, our predictive models based on 37 potential covariates were relatively unsuccessful because of the high level of class imbalance. We further investigated the robustness of our methods to the imbalanced data-set, which allowed for improved predictions. 
 
+NHANES is a valuable data-set with many covariates and outcomes of interest. Although the data-set is not without issues, we were able to extract some interesting information on risk factors of heart disease. Our analysis of variable selection revealed that among our three outcomes of interest (heart attack, stroke, chd), subject's weight seems to be the most influential. Unfortunately, our predictive models based on 37 potential covariates were relatively unsuccessful because of the high level of class imbalance. We further investigated the robustness of our methods to the imbalanced data-set, which allowed for improved predictions. 
 
+# References 
 
+"Coronary Heart Disease." National Heart Lung and Blood Institute, U.S. Department of Health and Human Services, www.nhlbi.nih.gov/health-topics/coronary-heart-disease.
+
+"Division for Heart Disease and Stroke Prevention." Centers for Disease Control and Prevention, Centers for Disease Control and Prevention, 23 Aug. 2017, www.cdc.gov/dhdsp/data_statistics/fact_sheets/fs_heart_disease.htm.
+
+"Heart Attack." National Heart Lung and Blood Institute, U.S. Department of Health and Human Services, www.nhlbi.nih.gov/health-topics/heart-attack.
+
+"Heart Disease Risk Factors." Centers for Disease Control and Prevention, Centers for Disease Control and Prevention, 10 Aug. 2015, www.cdc.gov/heartdisease/risk_factors.htm.
+
+Lin W, Chen JJ. Class-imbalanced classifiers for high-dimensional data. Brief Bioinform. 2013;14(1),13-26.
+
+"Risk Factors." World Heart Federation, www.world-heart-federation.org/resources/risk-factors/.
+
+"Stroke." National Heart Lung and Blood Institute, U.S. Department of Health and Human Services, www.nhlbi.nih.gov/health-topics/stroke.
 
 
 
