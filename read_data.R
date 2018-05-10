@@ -76,7 +76,7 @@ nhanes2 <- nhanes1 %>%
 nhanes2$bmicat <- cut(nhanes2$bmi, c(0, 18.5, 25, 30, 70),
                       labels = 1:4, right = FALSE)
 
-# create age cuts
+# create age cutsr
 nhanes2$agecat <- cut(nhanes2$age, c(20, 45, 65, 90),
                       labels = 1:3, right = FALSE)
 
