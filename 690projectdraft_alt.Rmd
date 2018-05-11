@@ -77,13 +77,13 @@ CHD & 447 & 10505 & 0.041 \\
 \end{center}
 \end{table}
 
-We analyzed these heart disease-related outcomes in three ways. The first was variable selection ...
+We analyzed these heart disease-related outcomes in three ways. The first was variable selection, using backward selection and forward selection. These two methods of variable selection were used to determine which risk factors were most significant in predicting coronary heart disease (CHD), heart attack, and stroke. With so many potential risk factors for heart related diseases, it may be useful to narrow down the list into the most influential factors.
 
 The second analysis we conducted was a series of prediction experiments using a variety of methods to classify heart disease-related outcomes with NHANES data was conducted. There are two primary goals of this exercise. The first is to see how well NHANES data can be used to classify instance of heart disease-related outcomes such as heart attack, stroke, and coronary heart disease (CHD). The second was to evaluate the performance of classification methods relative to each other and assess if one method significantly outperformed the others. The classification methods used were as follows: logistic regression (LR), with both lasso and ridge penalties; support vector machines (SVM), using linear, polynomial, and radial kernels; k-nearest neighbors (KNN), and; decision trees (DT). 
 
 Finally, the third analysis was a study of the effects of imbalance in levels of the outcome variables. Due to the rarity of stroke, the NHANES data-set is very imbalanced, with around $4\%$ positives. We seek to answer the question, does applying different penalties provide a predictive advantage at varying levels of class imbalance? The intuition here is that predicting all responses into $1$ class achieves high accuracy when the data set is very imbalanced. In particular, we can achieve $99\%$ accuracy on a test set of ninety-nine 1s and one 0 by simply guessing all 1s and ignoring covariates. This is another instance of the commonly found "local minimum" issue in statistical learning. The objective function has such a deep local minimum when guessing all 1s.
 
-In the Methods section, provide an overview of the procedures use for each analysis stream. In the Results and Discussion section, we describe results of our work and discuss conclusions of the research.
+In the Methods section, we provide an overview of the procedures use for each analysis stream. In the Results and Discussion section, we describe results of our work and discuss conclusions of the research.
 
 \newpage
 
